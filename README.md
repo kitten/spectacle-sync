@@ -7,6 +7,9 @@
 - All viewers' browsers will connect to yours via WebRTC
 - Proceed to give the most stylish presentation imaginable 🕶
 
+You don't even need to start up a server! A signal server is already
+predeployed and WebRTC works P2P ✨
+
 <img src="demo.gif" />
 
 ## Getting Started
