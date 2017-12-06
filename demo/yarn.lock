@@ -6249,8 +6249,8 @@ spdy@^3.4.1:
     spdy-transport "^2.0.18"
 
 spectacle-sync@^0.1.0:
-  version "0.1.0"
-  resolved "https://registry.yarnpkg.com/spectacle-sync/-/spectacle-sync-0.1.0.tgz#1d8ca381874fbfe0c343a51ee16d60dc3ffcb16c"
+  version "0.1.1"
+  resolved "https://registry.yarnpkg.com/spectacle-sync/-/spectacle-sync-0.1.1.tgz#9c3fda7e56afa2d703ca08e43c160dade9d49a8b"
   dependencies:
     emotion "^8.0.12"
     mitt "^1.1.2"
