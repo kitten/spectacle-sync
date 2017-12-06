@@ -5,21 +5,21 @@ import createMasterManager from './MasterManager';
 
 const makeChannelName = token => `Spectacle:${token}`;
 
-const initialState = {
+const initialState = () => ({
   showConnectionMenu: true,
   isInputDisabled: false,
   isConnected: false,
   tokenInput: '',
   status: '',
   connectionStatus: ''
-};
+});
 
 class NetworkSync extends Component {
   static defaultProps = {
     signalUri: 'https://spectacle-signalling.now.sh'
   };
 
-  state = initialState;
+  state = initialState();
 
   onClickClose = () => {
     this.setState({ showConnectionMenu: false });
@@ -103,7 +103,7 @@ class NetworkSync extends Component {
       this.endSession();
     }
 
-    this.setState(initialState);
+    this.setState(initialState());
   };
 
   componentWillUnmount() {

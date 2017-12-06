@@ -23,6 +23,7 @@ class SlaveManager {
 
       this.peer.on('connect', () => {
         this.setStatus('Connected');
+        cb();
       });
 
       this.peer.on('close', () => {
@@ -31,8 +32,6 @@ class SlaveManager {
       });
 
       this.peer.on('data', this.onData);
-
-      cb();
     });
   }
 

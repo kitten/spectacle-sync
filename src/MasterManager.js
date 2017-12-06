@@ -3,8 +3,8 @@ import Peer from 'simple-peer';
 import { subscribe as subscribeToStorage } from './localStorageHook';
 
 const makeClientCounterMessage = count => count === 0
-  ? '⌛ Waiting for viewers'
-  : `🔴 ${count} connected viewers`;
+  ? '⌛  Waiting for viewers'
+  : `🔴  ${count} connected viewers`;
 
 class MasterManager {
   constructor(token, signalUri, setStatus, cb) {
@@ -98,7 +98,7 @@ class MasterManager {
       peer.destroy();
     }
 
-    this.setStatus('🔚 Session closed');
+    this.setStatus('🔚  Session closed');
   };
 }
 
