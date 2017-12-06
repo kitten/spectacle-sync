@@ -1,0 +1,52 @@
+{
+  "name": "spectacle-sync",
+  "version": "0.0.1",
+  "description": "💁 Present Spectacle presentations synchronised on multiple devices",
+  "main": "lib/index.js",
+  "files": [
+    "server.js",
+    "server",
+    "src",
+    "lib",
+    "README.md",
+    "CODE_OF_CONDUCT.md"
+  ],
+  "scripts": {
+    "build": "babel src -d lib",
+    "prepublish": "yarn run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/philpl/spectacle-sync.git"
+  },
+  "author": "Phil Plückthun <phil@plckthn.me>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/philpl/spectacle-sync/issues"
+  },
+  "dependencies": {
+    "emotion": "^8.0.12",
+    "mitt": "^1.1.2",
+    "react-emotion": "^8.0.12",
+    "simple-peer": "^8.2.0",
+    "socket.io-client": "^2.0.4"
+  },
+  "peerDependencies": {
+    "react": "^16.0.0",
+    "react-dom": "^16.0.0",
+    "spectacle": "^4.0.4"
+  },
+  "devDependencies": {
+    "babel-cli": "^6.26.0",
+    "babel-core": "^6.26.0",
+    "babel-plugin-emotion": "^8.0.12",
+    "babel-plugin-transform-class-properties": "^6.24.1",
+    "babel-plugin-transform-object-rest-spread": "^6.26.0",
+    "babel-preset-env": "^1.6.1",
+    "babel-preset-react": "^6.24.1",
+    "prop-types": "^15.6.0",
+    "react": "^16.2.0",
+    "react-dom": "^16.2.0",
+    "spectacle": "^4.0.4"
+  }
+}
