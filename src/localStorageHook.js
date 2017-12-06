@@ -29,10 +29,14 @@ if (typeof localStorage === 'object' && localStorage.setItem) {
 }
 
 export const emitStorageEvent = (key, newValue) => {
+  // Emit a fake "storage" event for Spectacle
   const event = new Event('storage');
   event.key = key;
   event.newValue = newValue;
   window.dispatchEvent(event);
+
+  // Also set the result in the localStorage for other tabs
+  localStorage.setItem(key, newValue);
 };
 
 export const subscribe = cb => {
