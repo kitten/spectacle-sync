@@ -29,6 +29,15 @@ class MasterManager {
       // Listen to changes on the local storage
       this.unsubscribeFromStorage = subscribeToStorage(this.onStorage);
 
+      // Cache all local storage states
+      this.peerStateCache = new Object(null);
+
+      // Initialise state with slide-state
+      const spectacleSlideState = localStorage.getItem('spectacle-slide');
+      if (spectacleSlideState) {
+        this.peerStateCache['spectacle-slide'] = data;
+      }
+
       // Set initial status message
       this.setStatus(makeClientCounterMessage(0));
 
@@ -60,6 +69,21 @@ class MasterManager {
     peer.on('connect', () => {
       this.clientCounter++;
       this.setStatus(makeClientCounterMessage(this.clientCounter));
+
+      let index = 1;
+      const initState = (key, data) => {
+        const payload = JSON.stringify({ key, data });
+
+        // Wait for app to process & peer to 'calm down' before sending more
+        setTimeout(() => {
+          peer.send(payload);
+        }, 100 * index++);
+      };
+
+      // Send all other state
+      for (const key in this.peerStateCache) {
+        initState(key, this.peerStateCache[key]);
+      }
     });
 
     peer.on('close', () => {
@@ -75,6 +99,9 @@ class MasterManager {
   };
 
   onStorage = (key, data) => {
+    // Cache all local storage changes per key
+    this.peerStateCache[key] = data;
+
     const payload = JSON.stringify({ key, data });
 
     for (const clientId in this.clientPeers) {
