@@ -1,6 +1,6 @@
 {
   "name": "spectacle-sync",
-  "version": "0.1.1",
+  "version": "1.0.0",
   "description": "💁 Present Spectacle presentations synchronised on multiple devices",
   "main": "lib/index.js",
   "files": [
@@ -32,9 +32,9 @@
     "socket.io-client": "^2.0.4"
   },
   "peerDependencies": {
+    "prop-types": "^15.6.0",
     "react": "^16.0.0",
     "react-dom": "^16.0.0",
-    "prop-types": "^15.6.0",
     "spectacle": "^4.0.4"
   },
   "devDependencies": {
