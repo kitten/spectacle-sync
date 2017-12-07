@@ -28,21 +28,24 @@ Once you have your presentation, just install `spectacle-sync` from npm:
 yarn add spectacle-sync
 ```
 
-To add it to your presentation, all you need to do is to wrap your `<Deck>` in another component:
+To add it to your presentation, all you need to do is to replace Spectacle's `<Deck>` with
+Spectacle Sync's `<NetworkDeck>`:
 
 ```js
 import React, { Component } from 'react';
-import { Spectacle, Deck } from 'spectacle';
-import NetworkSync from 'spectacle-sync';
+import { Slide } from 'spectacle';
+
+// Use this Deck instead of spectacle's:
+import { NetworkDeck } from 'spectacle-sync';
 
 export default class Presentation extends Component {
   render() {
     return (
-      <NetworkManager>
-        <Deck>
+      <NetworkDeck>
+        <Slide>
           // ...
-        </Deck>
-      </NetworkManager>
+        </Slide>
+      </NetworkDeck>
     );
   }
 }
@@ -69,7 +72,8 @@ if you want.
 
 ## API
 
-The only exposed API is the `NetworkSync` component which accepts the following props:
+The only exposed component is the `NetworkDeck` component which accepts the following props
+additionally to the standad Spectacle Deck's props:
 
 | Name | PropType | Description |
 | ---- | -------- | ----------- |
