@@ -63,8 +63,10 @@ class SignalEffect extends Component {
   index = 0;
 
   componentDidMount() {
+    window.addEventListener('resize', this.onResize);
+
     if (this.props.produceSignals) {
-      this.attachEvents();
+      this.attachClicks();
     }
   }
 
@@ -72,23 +74,22 @@ class SignalEffect extends Component {
     const isDiff = produceSignals !== this.props.produceSignals;
 
     if (isDiff && produceSignals) {
-      this.attachEvents();
+      this.attachClicks();
     } else if (isDiff) {
-      this.detachEvents();
+      this.detachClicks();
     }
   }
 
   componentWillUnmount() {
-    this.detachEvents();
+    window.removeEventListener('resize', this.onResize);
+    this.detachClicks();
   }
 
-  attachEvents = () => {
-    window.addEventListener('resize', this.onResize);
+  attachClicks = () => {
     window.addEventListener('mousedown', this.onClick);
   };
 
-  detachEvents = () => {
-    window.removeEventListener('resize', this.onResize);
+  detachClicks = () => {
     window.removeEventListener('mousedown', this.onClick);
   };
 
