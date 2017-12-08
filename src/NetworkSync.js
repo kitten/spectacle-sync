@@ -2,16 +2,19 @@ import React, { Component } from 'react';
 import { ConnectionMenu, Wrapper, TokenInput, Row, Button, StatusText, Status } from './styles';
 import createSlaveManager from './SlaveManager';
 import createMasterManager from './MasterManager';
+import SignalEffect from './SignalEffect';
 
 const makeChannelName = token => `Spectacle:${token}`;
 
 const initialState = () => ({
   showConnectionMenu: true,
   isInputDisabled: false,
+  isSlave: false,
   isConnected: false,
+  showsClicks: false,
   tokenInput: '',
   status: '',
-  connectionStatus: ''
+  connectionStatus: '🔗'
 });
 
 class NetworkSync extends Component {
@@ -33,6 +36,21 @@ class NetworkSync extends Component {
     this.setState({ tokenInput: evt.target.value });
   };
 
+  onSignalRef = ref => {
+    this.signalRef = ref;
+  };
+
+  onTriggerSignal = evt => {
+    if (this.masterManager) {
+      this.masterManager.sendEvent('signal', evt);
+    }
+  };
+
+  toggleClickTransmission = () => {
+    const { showClicks } = this.state;
+    this.setState({ showClicks: !showClicks });
+  };
+
   joinSession = () => {
     const { tokenInput } = this.state;
 
@@ -52,6 +70,7 @@ class NetworkSync extends Component {
 
     this.setState({
       status: 'Connecting... 🌍',
+      isSlave: true,
       isInputDisabled: true
     });
 
@@ -65,7 +84,14 @@ class NetworkSync extends Component {
         status: 'Connected 🎉'
       });
 
+      const unsubscribe = slaveManager.subscribe((key, data) => {
+        if (key === 'signal' && this.signalRef && data.relativeX && data.relativeY) {
+          this.signalRef.startRipple(data.relativeX, data.relativeY);
+        }
+      });
+
       this.endSession = () => {
+        unsubscribe();
         slaveManager.destroy();
         this.endSession = undefined;
 
@@ -92,6 +118,7 @@ class NetworkSync extends Component {
     this.setState({
       isInputDisabled: true,
       isConnected: true,
+      isSlave: false,
       tokenInput,
       status: 'Share the token with your viewers 📺'
     });
@@ -101,9 +128,12 @@ class NetworkSync extends Component {
       token: makeChannelName(tokenInput),
       setStatus: connectionStatus => this.setState({ connectionStatus })
     }).then(masterManager => {
+      this.masterManager = masterManager;
+
       this.endSession = () => {
         masterManager.destroy();
         this.endSession = undefined;
+        this.masterManager = undefined;
       };
     }).catch(err => {
       this.setState({
@@ -129,7 +159,7 @@ class NetworkSync extends Component {
   }
 
   renderConnectionMenu() {
-    const { isConnected } = this.state;
+    const { isConnected, isSlave, showClicks } = this.state;
 
     return (
       <ConnectionMenu onClick={this.onClickClose}>
@@ -145,7 +175,14 @@ class NetworkSync extends Component {
           <Row>
             {!isConnected && <Button onClick={this.joinSession}>Join Session</Button>}
             {!isConnected && <Button onClick={this.createSession}>Create Session</Button>}
+
             {isConnected && <Button onClick={this.disconnect}>Disconnect</Button>}
+
+            {isConnected && !isSlave && (
+              <Button onClick={this.toggleClickTransmission}>
+                {showClicks ? 'Hide Clicks' : 'Show Clicks'}
+              </Button>
+            )}
           </Row>
 
           <StatusText>
@@ -164,10 +201,26 @@ class NetworkSync extends Component {
     ) : null;
   }
 
+  renderSignals() {
+    const { isConnected, isSlave, showClicks, showConnectionMenu } = this.state;
+    if (!isConnected) {
+      return null;
+    }
+
+    return (
+      <SignalEffect
+        produceSignals={!isSlave && showClicks && !showConnectionMenu}
+        onTrigger={this.onTriggerSignal}
+        ref={this.onSignalRef}
+      />
+    );
+  }
+
   render() {
     return (
       <div>
         {this.props.children}
+        {this.renderSignals()}
         {this.state.showConnectionMenu && this.renderConnectionMenu()}
         {this.renderStatus()}
       </div>

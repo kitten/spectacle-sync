@@ -9,7 +9,7 @@ export const ConnectionMenu = styled('div')`
   left: 0;
   width: 100%;
   height: 100%;
-  z-index: 10000;
+  z-index: 10001;
 
   display: flex;
   flex-direction: column;
@@ -121,9 +121,11 @@ export const Status = styled('a')`
   left: 0;
   bottom: 0;
   text-decoration: none;
+  z-index: 10001;
+  border-top-right-radius: 3px;
 
   cursor: pointer;
-  padding: 3px 6px;
+  padding: 5px 6px 3px 6px;
   background: black;
   color: white;
   line-height: 1.2;

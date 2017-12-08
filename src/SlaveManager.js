@@ -1,5 +1,6 @@
 import io from 'socket.io-client/dist/socket.io.slim';
 import Peer from 'simple-peer';
+import mitt from 'mitt';
 import { emitStorageEvent } from './localStorageHook';
 
 class SlaveManager {
@@ -7,6 +8,7 @@ class SlaveManager {
     this.setStatus = setStatus;
     this.socket = io(signalUri);
     this.peer = new Peer({});
+    this.emitter = mitt();
 
     // Register signalling events
     this.socket.on('signal', this.onIncomingSignal);
@@ -47,11 +49,20 @@ class SlaveManager {
     });
   }
 
+  subscribe = cb => {
+    this.emitter.on('*', cb);
+    return () => this.emitter.off('*', cb);
+  };
 
   onData = payload => {
     try {
-      const { key, data } = JSON.parse(payload);
-      emitStorageEvent(key, data);
+      const { key, data, kind } = JSON.parse(payload);
+
+      if (kind === 'localstorage') {
+        emitStorageEvent(key, data);
+      } else if (kind === 'event') {
+        this.emitter.emit(key, data);
+      }
     } catch (err) {
       console.error(`Error parsing master payload`, err);
     }
