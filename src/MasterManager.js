@@ -72,7 +72,7 @@ class MasterManager {
 
       let index = 1;
       const initState = (key, data) => {
-        const payload = JSON.stringify({ key, data });
+        const payload = JSON.stringify({ key, data, kind: 'localstorage' });
 
         // Wait for app to process & peer to 'calm down' before sending more
         setTimeout(() => {
@@ -98,11 +98,8 @@ class MasterManager {
     peer.signal(data);
   };
 
-  onStorage = (key, data) => {
-    // Cache all local storage changes per key
-    this.peerStateCache[key] = data;
-
-    const payload = JSON.stringify({ key, data });
+  _doSendEvent = (key, data, kind = 'localstorage') => {
+    const payload = JSON.stringify({ key, data, kind });
 
     for (const clientId in this.clientPeers) {
       const peer = this.clientPeers[clientId];
@@ -110,6 +107,16 @@ class MasterManager {
       // the clients have received it for sure
       peer.send(payload);
     }
+  };
+
+  onStorage = (key, data) => {
+    // Cache all local storage changes per key
+    this.peerStateCache[key] = data;
+    this._doSendEvent(key, data, 'localstorage');
+  };
+
+  sendEvent = (key, data) => {
+    this._doSendEvent(key, data, 'event');
   };
 
   destroy = () => {
