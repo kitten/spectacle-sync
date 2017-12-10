@@ -5,14 +5,23 @@ import { emitStorageEvent } from './localStorageHook';
 
 class SlaveManager {
   constructor(token, signalUri, setStatus, cb) {
+    this.socket = io(signalUri, {
+      transports: ['websocket'],
+      timeout: 3000,
+      reconnection: true,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 800,
+      reconnectionDelayMax: 1200,
+      randomizationFactor: 0,
+      autoConnect: true
+    });
+
     this.setStatus = setStatus;
-    this.socket = io(signalUri);
     this.peer = new Peer({});
     this.emitter = mitt();
 
     // Register signalling events
     this.socket.on('signal', this.onIncomingSignal);
-    this.peer.on('signal', this.onOutgoingSignal);
 
     // Emit session join event
     this.socket.emit('join-session', { token }, ({ error }) => {
@@ -20,20 +29,15 @@ class SlaveManager {
         cb(new Error(error));
       }
 
-      // Set initialisation flag
+      // Set initialisation flag and token
       this.initialised = true;
+      this.token = token;
+      this.attachPeer();
 
       this.peer.on('connect', () => {
         this.setStatus('Connected');
         cb();
       });
-
-      this.peer.on('close', () => {
-        this.socket.close();
-        this.setStatus('Disconnected');
-      });
-
-      this.peer.on('data', this.onData);
     });
   }
 
@@ -48,6 +52,18 @@ class SlaveManager {
       });
     });
   }
+
+  attachPeer = () => {
+    this.peer.on('signal', this.onOutgoingSignal);
+
+    this.peer.on('close', () => {
+      this.setStatus('Reconnecting...');
+      this.peer.destroy();
+      this.reconnect();
+    });
+
+    this.peer.on('data', this.onData);
+  };
 
   subscribe = cb => {
     this.emitter.on('*', cb);
@@ -76,14 +92,37 @@ class SlaveManager {
     this.socket.emit('signal', { data });
   };
 
-  destroy = () => {
-    if (this.initialised !== true) {
-      return;
+  reconnect = () => {
+    if (this.initialised) {
+      this.initialised = false;
+      this.peer = new Peer({});
+      this.attachPeer();
+
+      this.peer.on('connect', () => {
+        this.setStatus('Connected');
+      });
     }
 
+    const opts = { token: this.token };
+
+    this.socket.emit('join-session', opts, ({ error, tryagain }) => {
+      if (error && tryagain) {
+        return setTimeout(this.reconnect, 1000);
+      } else if (error) {
+        return this.destroy();
+      }
+
+      this.initialised = true;
+    });
+  };
+
+  destroy = () => {
     this.socket.close();
-    this.peer.destroy();
     this.setStatus('Disconnected');
+
+    if (this.initialised) {
+      this.peer.destroy();
+    }
   };
 }
 

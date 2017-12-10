@@ -4,7 +4,7 @@ import createSlaveManager from './SlaveManager';
 import createMasterManager from './MasterManager';
 import SignalEffect from './SignalEffect';
 
-const makeChannelName = token => `Spectacle:${token}`;
+const makeChannelName = token => `Spectacle:${token.toUpperCase()}`;
 
 const initialState = () => ({
   showConnectionMenu: true,
@@ -116,11 +116,10 @@ class NetworkSync extends Component {
     }
 
     this.setState({
-      isInputDisabled: true,
-      isConnected: true,
-      isSlave: false,
+      status: 'Connecting... 🌍',
       tokenInput,
-      status: 'Share the token with your viewers 📺'
+      isSlave: false,
+      isInputDisabled: true
     });
 
     createMasterManager({
@@ -128,6 +127,11 @@ class NetworkSync extends Component {
       token: makeChannelName(tokenInput),
       setStatus: connectionStatus => this.setState({ connectionStatus })
     }).then(masterManager => {
+      this.setState({
+        isConnected: true,
+        status: 'Share the token with your viewers 📺'
+      });
+
       this.masterManager = masterManager;
 
       this.endSession = () => {

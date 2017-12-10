@@ -8,40 +8,58 @@ const makeClientCounterMessage = count => count === 0
 
 class MasterManager {
   constructor(token, signalUri, setStatus, cb) {
+    this.socket = io(signalUri, {
+      transports: ['websocket'],
+      timeout: 3000,
+      reconnection: true,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 800,
+      reconnectionDelayMax: 1200,
+      randomizationFactor: 0,
+      autoConnect: true
+    });
+
     this.setStatus = setStatus;
-    this.socket = io(signalUri);
     this.clientPeers = Object.create(null);
     this.clientCounter = 0;
 
     // Register signalling events
     this.socket.on('create-peer', this.onCreatePeer);
     this.socket.on('signal', this.onSignal);
+    this.socket.on('disconnect', this.onReconnectAttempt);
+    this.socket.on('reconnect_attempt', this.onReconnectAttempt);
+    this.socket.on('reconnecting', this.onReconnectAttempt);
+    this.socket.on('reconnect', this.onReconnect);
 
     // Emit session creation
-    this.socket.emit('create-session', { token }, ({ error }) => {
-      if (error) {
-        cb(new Error(error));
-      }
+    this.socket.on('connect', () => {
+      this.socket.emit('create-session', { token }, ({ secret, error }) => {
+        if (error) {
+          cb(new Error(error));
+        }
 
-      // Set initialisation flag
-      this.initialised = true;
+        // Set initialisation flag and secret
+        this.initialised = true;
+        this.token = token;
+        this.secret = secret;
 
-      // Listen to changes on the local storage
-      this.unsubscribeFromStorage = subscribeToStorage(this.onStorage);
+        // Listen to changes on the local storage
+        this.unsubscribeFromStorage = subscribeToStorage(this.onStorage);
 
-      // Cache all local storage states
-      this.peerStateCache = new Object(null);
+        // Cache all local storage states
+        this.peerStateCache = new Object(null);
 
-      // Initialise state with slide-state
-      const spectacleSlideState = localStorage.getItem('spectacle-slide');
-      if (spectacleSlideState) {
-        this.peerStateCache['spectacle-slide'] = data;
-      }
+        // Initialise state with slide-state
+        const spectacleSlideState = localStorage.getItem('spectacle-slide');
+        if (spectacleSlideState) {
+          this.peerStateCache['spectacle-slide'] = data;
+        }
 
-      // Set initial status message
-      this.setStatus(makeClientCounterMessage(0));
+        // Set initial status message
+        this.setStatus(makeClientCounterMessage(0));
 
-      cb();
+        cb();
+      });
     });
   }
 
@@ -56,6 +74,30 @@ class MasterManager {
       });
     });
   }
+
+  onReconnectAttempt = () => {
+    this.reconnecting = true;
+    this.setStatus('🛑  Reconnecting...');
+  };
+
+  onReconnect = () => {
+    if (!this.initialised || !this.secret) {
+      return;
+    }
+
+    const opts = { token: this.token, secret: this.secret };
+    this.socket.emit('resume-session', opts, ({ error }) => {
+      if (error) {
+        return this.setStatus('🔚  Session died');
+      }
+
+      // Set initialisation flag and secret
+      this.reconnecting = false;
+
+      // Update normal status message
+      this.setStatus(makeClientCounterMessage(this.clientCounter));
+    });
+  };
 
   onCreatePeer = ({ clientId }) => {
     const peer = this.clientPeers[clientId] = new Peer({
@@ -89,13 +131,18 @@ class MasterManager {
     peer.on('close', () => {
       delete this.clientPeers[clientId];
       this.clientCounter--;
-      this.setStatus(makeClientCounterMessage(this.clientCounter));
+
+      if (!this.reconnecting) {
+        this.setStatus(makeClientCounterMessage(this.clientCounter));
+      }
     });
   };
 
   onSignal = ({ clientId, data }) => {
     const peer = this.clientPeers[clientId];
-    peer.signal(data);
+    if (peer) {
+      peer.signal(data);
+    }
   };
 
   _doSendEvent = (key, data, kind = 'localstorage') => {
@@ -103,9 +150,9 @@ class MasterManager {
 
     for (const clientId in this.clientPeers) {
       const peer = this.clientPeers[clientId];
-      // TODO: Send periodically until next storage event or until heuristically
-      // the clients have received it for sure
-      peer.send(payload);
+      if (peer) {
+        peer.send(payload);
+      }
     }
   };
 
@@ -120,7 +167,9 @@ class MasterManager {
   };
 
   destroy = () => {
-    if (this.initialised !== true) {
+    this.setStatus('🔚  Session closed');
+
+    if (!this.initialised) {
       return;
     }
 
@@ -131,8 +180,6 @@ class MasterManager {
       const peer = this.clientPeers[clientId];
       peer.destroy();
     }
-
-    this.setStatus('🔚  Session closed');
   };
 }
 
