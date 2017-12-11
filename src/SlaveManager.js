@@ -16,12 +16,20 @@ class SlaveManager {
       autoConnect: true
     });
 
+    this.peer = new Peer({
+      reconnectTimer: 3000,
+      trickle: false
+    });
+
     this.setStatus = setStatus;
-    this.peer = new Peer({});
     this.emitter = mitt();
 
     // Register signalling events
     this.socket.on('signal', this.onIncomingSignal);
+
+    this.socket.on('reconnect_attempt', () => {
+      this.socket.io.opts.transports = ['polling', 'websocket'];
+    });
 
     // Emit session join event
     this.socket.emit('join-session', { token }, ({ error }) => {

@@ -21,13 +21,18 @@ class MasterManager {
 
     this.setStatus = setStatus;
     this.clientPeers = Object.create(null);
+    this.clientPeersConnecting = Object.create(null);
     this.clientCounter = 0;
+
+    this.socket.on('reconnect_attempt', () => {
+      this.socket.io.opts.transports = ['polling', 'websocket'];
+      this.onReconnectAttempt();
+    });
 
     // Register signalling events
     this.socket.on('create-peer', this.onCreatePeer);
     this.socket.on('signal', this.onSignal);
     this.socket.on('disconnect', this.onReconnectAttempt);
-    this.socket.on('reconnect_attempt', this.onReconnectAttempt);
     this.socket.on('reconnecting', this.onReconnectAttempt);
     this.socket.on('reconnect', this.onReconnect);
 
@@ -100,15 +105,22 @@ class MasterManager {
   };
 
   onCreatePeer = ({ clientId }) => {
-    const peer = this.clientPeers[clientId] = new Peer({
-      initiator: true
+    const peer = new Peer({
+      initiator: true,
+      reconnectTimer: 3000,
+      trickle: false
     });
+
+    this.clientPeersConnecting[clientId] = peer;
 
     peer.on('signal', data => {
       this.socket.emit('signal', { clientId, data });
     });
 
     peer.on('connect', () => {
+      delete this.clientPeersConnecting[clientId];
+      this.clientPeers[clientId] = peer;
+
       this.clientCounter++;
       this.setStatus(makeClientCounterMessage(this.clientCounter));
 
@@ -139,7 +151,7 @@ class MasterManager {
   };
 
   onSignal = ({ clientId, data }) => {
-    const peer = this.clientPeers[clientId];
+    const peer = this.clientPeersConnecting[clientId] || this.clientPeers[clientId];
     if (peer) {
       peer.signal(data);
     }
@@ -149,9 +161,13 @@ class MasterManager {
     const payload = JSON.stringify({ key, data, kind });
 
     for (const clientId in this.clientPeers) {
-      const peer = this.clientPeers[clientId];
-      if (peer) {
-        peer.send(payload);
+      try {
+        const peer = this.clientPeers[clientId];
+        if (peer) {
+          peer.send(payload);
+        }
+      } catch (err) {
+        console.warn(`_doSendEvent to client ${clientId}:`, err);
       }
     }
   };

@@ -1,9 +1,8 @@
 const PORT = process.env.PORT || 3401;
 
 const io = require('socket.io')(PORT, {
-  pingInterval: 1500,
-  pingTimeout: 1500,
-  transports: ['websocket'],
+  pingInterval: 2000,
+  pingTimeout: 3000,
   serveClient: false,
   cookie: false
 });
@@ -29,6 +28,7 @@ const scheduleSessionForGarbage = token => {
   // Schedule deletion
   const timeout = setTimeout(() => {
     sessions.delete(token);
+    console.log(`- Destroy Session: ${token}`);
   }, 1000 * 60 * 60 * 4 /* 4h */);
 
   // Store timeout
@@ -51,6 +51,7 @@ const attachMasterHandlers = (socket, token) => {
 
   // Purge socket from cache when it disconnects to free session
   socket.on('disconnect', () => {
+    console.log(`- Pause Session: ${token}`);
     scheduleSessionForGarbage(token);
   });
 };
